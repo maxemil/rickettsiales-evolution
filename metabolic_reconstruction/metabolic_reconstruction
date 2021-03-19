@@ -1,0 +1,56 @@
+sp = "bin_67_1"
+lt = "L671"
+
+from collections import defaultdict
+from Bio import SeqIO
+import os
+
+id2rec = defaultdict(set)
+seq2id = defaultdict(set)
+for rec in SeqIO.parse('{}/PROKKA_06182020.faa'.format(sp), 'fasta'):
+    id2rec[rec.id] = rec
+    seq2id[str(rec.seq).replace('*', '')].add(rec.id)
+
+rec2rec = {}
+for rec in SeqIO.parse('../proteomes/{}.faa'.format(sp), 'fasta'):
+    if str(rec.seq) in seq2id:
+        rec2rec[rec.id] = seq2id[str(rec.seq)].pop()
+    else:
+        rec2rec[rec.id] = ''
+
+with open('{}.rename.txt'.format(sp), 'w') as out:
+    for k,v in rec2rec.items():
+        if v:
+            print(v, k, file=out)
+
+os.system("cp {}/PROKKA_06182020.gff {}.gff".format(sp, sp))
+os.system('while read k r; do sed -i "s/$k/$r/g" {}.gff ;done < {}.rename.txt'.format(sp, sp))
+os.system("cp {}/PROKKA_06182020.gff {}.v.gff".format(sp, sp))
+os.system("while read k r; do grep -v $k {}.v.gff > {}.v1.gff; mv {}.v1.gff {}.v.gff ;done < {}.rename.txt".format(sp, sp, sp, sp, sp))
+
+recs = []
+for rec in SeqIO.parse('../proteomes/bin_125.faa', 'fasta'):
+    recs.append(rec.id.split('..')[1])
+
+for line in open('{}.v.gff'.format(sp)):
+    line = line.strip().split('\t')
+    if len(line) == 9 and not line[2] == 'gene' and not line[2] == 'repeat_region':
+        line_dict = {}
+        for elem in line[8].split(';'):
+            elem = elem.split('=')
+            line_dict[elem[0]] = elem[1]
+        new_id = line_dict['ID'].split('..')[1]
+        count = 1
+        while new_id in recs:
+            new_id = "{}_{:05d}".format(lt, count)
+            count += 1
+        recs.append(new_id)
+        rec2rec["{}..{}".format(sp.replace('_', ''), new_id)] = line_dict['ID']
+
+with open('{}.rename.txt'.format(sp), 'w') as out:
+    for k,v in rec2rec.items():
+        if v:
+            print(v, k, file=out)
+
+os.system("cp {}/PROKKA_06182020.gff {}.gff".format(sp, sp))
+os.system('while read k r; do sed -i "s/$k/$r/g" {}.gff ;done < {}.rename.txt'.format(sp, sp))
