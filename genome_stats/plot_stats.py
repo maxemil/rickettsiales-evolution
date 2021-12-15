@@ -115,3 +115,17 @@ ax[1].yaxis.grid(False)
 ax[1].xaxis.grid(True)
 plt.tight_layout()
 plt.savefig('length_GC_box.pdf')
+
+
+from scipy.stats import ttest_ind
+cat1 = df[df['Clade'].apply(lambda x: x in ['Mitibacteraceae', 'UBA6187-group'])]
+cat2 = df[df['Clade'].apply(lambda x: x in ['Rickettsiaceae','Anaplasmataceae','Midichloriaceae','Deianiraeaceae','Gamibacteraceae'])]
+cat3 = df[df['Clade'].apply(lambda x: x in ['Alphaproteobacteria'])]
+
+for val in ['GC-content', 'Estimated length', 'coding density']:
+    print(ttest_ind(cat1[val], cat2[val]))
+    print(ttest_ind(cat3[val], cat2[val]))
+
+    print(cat1[val].describe())
+    print(cat2[val].describe())
+    print(cat3[val].describe())
